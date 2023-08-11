@@ -1024,3 +1024,183 @@ const { data, loading, loadMore, loadingMore } = useRequest(
 - loadingDelay
 
 通过设置 `loadingDelay` ，延迟 `loading` 变为 `true` 的时间，当请求很快响应时，可以有效避免 `loading` 变化导致的抖动。
+
+### 键盘监听包-keymaster
+
+### dva
+
+#### model 设置
+
+> 等同 redux
+> 所有状态管理数据放在 model 文件夹下
+> state:数据状态
+> reducers: 修改同步操作
+> effects: 修改异步操作，action 类型，第一个参是 action,第二个参是 options{put, call,select}, put 触发 action,call 调用异步逻辑，select 用于从 state 中获取数据
+> subscriptions: 自定义监听事件 fn({dispatch, history}),
+
+**model 在项目全局中**
+
+- 目录结构
+
+```text
+├── pages
+├── model
+  ├── global.js
+```
+
+```js
+// model/global.js
+export default {
+  namespace: 'global',
+  state: {
+    title: 'global hello world',
+    text: 'global text',
+    login: fasle,
+    a: 'global a'
+  },
+  reducers: {
+    setText(state) {
+      return {
+        ...state,
+        text: 'set global text'
+      }
+    },
+    // 同步修改传参
+    setTtile(state, action) {
+      return {
+        ...state,
+        title: `set global title:${action.payload.a}/${actiono.payload.b}`
+      }
+    },
+    signIn(state, action)=>({
+      ...state,
+      login: true
+    })
+  },
+  // 异步修改
+  effects: {
+    *getLogin(action, {put, call, select}){
+      // 发送异步请求
+      const res = yield call(request, '/api/login', {
+        method: 'post',
+        data: {
+          username: action.payload.username,
+          password: action.payload.password
+        }
+      })
+      // 将异步请求数据放进同步操作reduces.signIn中
+      yield put({type: 'signIn', payload: res})
+    }
+  }
+}
+```
+
+**model 在对应的组件中**
+
+- 目录结构
+
+```text
+├── pages
+  ├── dva
+    ├── models
+      ├── a.js
+      ├── b.js
+    ├── index.jsx
+    ├── model.js
+```
+
+- 只有一个模块数据
+
+```js
+// model.js
+export default {
+  namespace: "dva",
+  state: "only one model state",
+};
+```
+
+- 有多个模块数据
+
+```js
+// models/a.js
+export default {
+  namespace: 'a',
+  state: {
+    a: 'part dva state a'
+  }
+}
+
+// models/b.js
+export default {
+  namespace: 'b',
+  state: {
+    b: 'part dva state b'
+  },
+  reducers: {
+    setDataB(state) {
+      return 'part page dva state b'
+    }
+  }
+}
+```
+
+#### 与组件连接 connect
+
+```jsx
+import {connect} from 'umi'
+const mapModelToProps = (models) => {
+  return {
+    title: models.global.title,
+    text: models.global.text,
+    login: models.global.login,
+    globalA: models.global.a,
+    // 获取局部model数据
+    partdva: models.dva,
+    parta: models.a,
+    partb: models.b
+  }
+}
+
+@connect(mapModelToProps)
+
+export default testPage(props){
+
+  const handleGlobalClick = (props)=> {
+    props.dispatch({
+      type: 'global/setTtile',
+      payload: {a: 'global aa', b: 'global bb'}
+    })
+  }
+
+  const handlePartClick = (props)=> {
+    props.dispatch({
+      type: 'a/setDataB',
+    })
+  }
+
+  const handleEffectsClick = (props) => {
+    props.dispatch({
+      type: 'global/signIn',
+      payload: {username: 'admin', password: 'admin123'}
+    })
+  }
+
+  return (<>
+  <h3>获取全局state</h3>
+  <div>title:{props.title}</div>
+  <div>text:{props.text}</div>
+  <div>globalA:{props.globalA}</div>
+  {props.login ? <div>已登录</div> : <div>未登录</div>}
+  <button onClick={handlGlobalClick(props)}></button>
+
+  <h3>获取局部state</h3>
+  <div>model中数据:{props.partdva}</div>
+  <div>models/a中数据:{props.parta}</div>
+  <div>models/b中数据:{props.partb}</div>
+  <button onClick={handlePartClick(props)}>修改models/a/state.b</button>
+
+  <h3>发送异步请求</h3>
+  <button onClick={handleEffectsClick(props)}>发送effects请求</button>
+  </>)
+}
+```
