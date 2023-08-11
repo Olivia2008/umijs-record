@@ -358,7 +358,7 @@ export default function indexPage() {
 
 #### useMemo(()=>{},[])
 
-类似computed属性
+类似 computed 属性
 
 ```jsx
 // 关联更新数据的方法触发
@@ -419,7 +419,8 @@ export default testPage(){
 }
 
 ```
-> 给不依赖触发数据的组件添加高阶组件Memo
+
+> 给不依赖触发数据的组件添加高阶组件 Memo
 
 ```jsx
 // 子组件
@@ -504,7 +505,7 @@ export default Memo(Child)
 
 ```
 
-#### layout布局
+#### layout 布局
 
 ```text
                 layouts
@@ -512,7 +513,7 @@ export default Memo(Child)
     ──────────────────────────────
     ├                             ├
 components                      children
-    ├                             ├               
+    ├                             ├
   nav           ──────────────────────────────
                 ├                             ├
         layouts/layouts2                ────────────────
@@ -559,6 +560,7 @@ export default [
 ]
 
 ```
+
 注：配置路由组件的包装组件，通过包装组件可以为当前的路由组件组合进更多的功能。 比如，可以用于路由级别的权限校验
 
 **页面布局示例**
@@ -566,26 +568,26 @@ export default [
 - base-layout
 
 ```jsx
-export default function BaseLayout (props){
+export default function BaseLayout(props) {
   return (
     <>
       <Nav></Nav>
       <div>{props.children}</div>
     </>
-  )
+  );
 }
 ```
 
 - asid-layout
 
 ```jsx
-export default function AsideLayout (props){
+export default function AsideLayout(props) {
   return (
     <>
       <Menu></Menu>
       <div>{props.children}</div>
     </>
-  )
+  );
 }
 ```
 
@@ -649,25 +651,23 @@ hooks，获取 params 对象。 params 对象为动态路由（例如：/users/:
 - useHistory
 
 ```jsx
-
-export default function test(){
-  const history = useHistory()
+export default function test() {
+  const history = useHistory();
   const goLink = () => {
     history.push({
-      pathname: '/goods/3',
-      query: {b: 1}
-    })
-  }
+      pathname: "/goods/3",
+      query: { b: 1 },
+    });
+  };
 
   return (
     <>
-    <button onClick={goLink}>编程式跳转</button>
+      <button onClick={goLink}>编程式跳转</button>
     </>
-  )
-
+  );
 }
-
 ```
+
 - withRouter
 
 高阶组件，可以通过 withRouter 获取到 history、location、match 对象
@@ -680,12 +680,13 @@ export defautl withRouter((history,location,match)=>{
 ```
 
 **v4**
+
 - useMatch
 
 ```JS
 
 const match = useMatch('/comp/:id')
-// match 
+// match
 {
   "params": {
     "id": "paramId"
@@ -712,17 +713,15 @@ const match = useMatch('/comp/:id')
 }
 ```
 
-> 🚨推荐使用 `useLocation`, 而不是直接访问 `history.location.` 两者的区别是 `pathname` 的部分。 `history.location.pathname` 是完整的浏览器的路径名；而 `useLocation` 中返回的 `pathname` 是相对项目配置的base的路径
-> 🚨举例：项目如果配置 `base: '/testbase'`, 当前浏览器地址为 `https://localhost:8000/testbase/page/apple`
-`history.location.pathname` 为 `/testbase/page/apple`
- `useLocation().pathname`为 `/page/apple` 
+> 🚨 推荐使用 `useLocation`, 而不是直接访问 `history.location.` 两者的区别是 `pathname` 的部分。 `history.location.pathname` 是完整的浏览器的路径名；而 `useLocation` 中返回的 `pathname` 是相对项目配置的 base 的路径
+> 🚨 举例：项目如果配置 `base: '/testbase'`, 当前浏览器地址为 `https://localhost:8000/testbase/page/apple` > `history.location.pathname` 为 `/testbase/page/apple` > `useLocation().pathname`为 `/page/apple`
 
 - useParams
 
 ```js
 // 路由配置 /comp/:id
 // 当前 location /comp/paramId
- 
+
 const params  = useParams();
 // params
 {
@@ -735,23 +734,293 @@ const params  = useParams();
 ```js
 // 当前 location /comp?a=b;
 const [searchParams, setSearchParams] = useSearchParams();
-searchParams.get('a')  // b
-searchParams.toString()  // a=b
- 
-setSearchParams({a:'c',d:'e'}) // location 变成 /comp?a=c&d=e
+searchParams.get("a"); // b
+searchParams.toString(); // a=b
+
+setSearchParams({ a: "c", d: "e" }); // location 变成 /comp?a=c&d=e
 ```
 
 ### mock
 
+模拟延时：roadhog-api-doc
 
+```js
+import {delay} from 'roadhog-api-doc
+export default delay({
+  '/api/user': {id: 12345, name: 'Olivia'}
+}, 2000)
 
+```
 
+**v4**
 
+- mock 使用，默认 get 请求
 
+```js
+export default {
+  // 默认get方法
+  "/api/users": { id: 10000, name: "Olivia" },
+  "/api/users/1": [
+    { id: 100001, name: "foo" },
+    { id: 100002, name: "woo" },
+  ],
+  // 后面可接自定义函数
+  "POST /api/login": (req: any, res: any) => {
+    const { username, password } = req.body;
+    if (username === "Olivia" && password === "abc123") {
+      res.send({
+        code: 200,
+        data: {},
+        message: "success",
+      });
+    } else if (username === "admin" && password === "admin123") {
+      res.send({
+        code: 200,
+        data: {},
+        message: "success",
+      });
+    } else {
+      res.send({
+        code: 201,
+        message: "failed",
+      });
+    }
+  },
+};
+```
 
+- 可以用 roadhog-api-doc 模拟请求延时
 
+```js
+import { delay } from "roadhog-api-doc";
+export default delay(
+  {
+    "/api/user": { id: 12345, name: "Olivia" },
+  },
+  2000
+);
+```
 
+- mockjs
 
+```js
+import mockjs from "mockjs";
 
+export default {
+  // 使用 mockjs 等三方库
+  "GET /api/tags": mockjs.mock({
+    "list|100": [{ name: "@city", "value|1-100": 50, "type|0-2": 1 }],
+  }),
+};
+```
 
+mockjs 模拟条数数据
 
+```js
+import { delay } from "roadhog-api-doc";
+import mockjs from "mockjs";
+
+export default delay(
+  {
+    "/api/list": (req, res) => {
+      const { page = 1, limit = 3 } = req.body;
+      const totalPage = 3;
+      const lastPageLimit = 2; // 尾页条数
+      const total = limit * (totalPage - 1) + lastPageLimit;
+      res.send({
+        code: 200,
+        data: {
+          page,
+          limit,
+          total,
+          ...mockjs.mock({
+            [`data|${page > totalPage ? lastPageLimit : limit}`]: [
+              {
+                "id|+1": 1,
+                create_at: "@date('yyyy-MM-dd HH:mm:ss')",
+                "type_str|1": ["aaaaaa", "bbbbbbb", "cccc", "dddddddd"],
+                name: function () {
+                  return [
+                    mockjs.mock('@datetime("MMdd")'),
+                    mockjs.mock("@country()"),
+                    this.operator,
+                  ].join("-");
+                },
+                path: "http://www.baidu.com",
+                operator: "@cname",
+                "status|1": ["0", "2", "3", "4"],
+              },
+            ],
+          }),
+        },
+      });
+    },
+  },
+  2000
+);
+```
+
+### 请求配置
+
+#### useRequest()
+
+第一种：`const {data, error, loading, run, cancel, fetches, loadingMore, loadMore} = useRequest('/api/user')`
+第二种：`const {data, error, loading, run} = useRequest('/proxy/aaaaaaa')` 反向代理
+第三咱：`const { data, error, loading, run } = useRequest((userId)=> `/api/userInfo/${userId}`);`
+第四种：
+
+```js
+const { data, error, loading, run } = useRequest(
+  {
+    url: "/api/login",
+    method: "post",
+    data: {
+      username: "aaa",
+      password: "123aaa",
+    },
+  },
+  {
+    manual: true,
+  }
+);
+```
+
+**options 属性**
+
+- 手动请求 manual
+  `manual`为`true`阻止初始化默认请求，只有触发`run`时才会开始执行。
+
+  ```jsx
+  import { useRequest } from '@umijs/hooks';
+  ​
+  export default () => {
+  const { run, loading } = useRequest(changeUsername, {manual: true})
+
+  return (
+    <Button onClick={() => run('new name')} loading={loading}>
+       Edit
+    </Button>
+    )
+  }
+  ```
+
+- 轮洵 poilingInterval
+
+自动定时发起网络请求
+
+```jsx
+import { useRequest } from '@umijs/hooks';
+​
+export default () => {
+  const { data } = useRequest(getUsername, { pollingInterval: 1000, pollingWhenHidden: false })
+​
+  return <div>Username: {data}</div>
+}
+```
+
+同时通过设置`pollingWhenHidden`，我们可以智能的实现在屏幕隐藏时，暂停轮询。等屏幕恢复可见时，继续请求，以节省资源。为 false 时屏幕不可见时，轮洵暂停
+
+当然你也可以通过`run/cancel`来手动控制定时器的开启和关闭。
+
+- 并行请求 fetchKey
+
+并行请求有几个特点： 1)删除 n 个不同的用户，则需要维护 n 个请求状态。 2)多次删除同一个用户，则只需要维护最后一个请求。
+
+`useRequest` 通过设置 `fetchKey `，即可对请求进行分类。相同分类的请求，只会维护一份状态。不同分类的请求，则会维护多份状态。在下面的代码中，我们通过 `userId` 将请求进行分类，同时我们可以通过 `fetches[userId]` 拿到当前分类的请求状态！
+
+```jsx
+export default () => {
+  const { run, fetches } = useRequest(deleteUser, {
+    manual: true,
+    fetchKey: id => id, // 不同的 ID，分类不同
+  });
+​
+  return (
+    <div>
+      <Button loading={fetches.A?.loading} onClick={() => { run('A') }}>删除 1</Button>
+      <Button loading={fetches.B?.loading} onClick={() => { run('B') }}>删除 2</Button>
+      <Button loading={fetches.C?.loading} onClick={() => { run('C') }}>删除 3</Button>
+    </div>
+  );
+};
+```
+
+- 防抖 debounceInterval&节流 throttleInterval
+
+在下面的例子中，无论调用了多少次`run` ，只会在输入停止后，发送一次请求。
+
+```jsx
+import { useRequest } from '@umijs/hooks';
+​
+export default () => {
+  const { data, loading, run, cancel } = useRequest(getEmail, {
+    debounceInterval: 500,
+    manual: true
+  });
+​
+  return (
+    <div>
+      <Select onSearch={run} loading={loading}>
+        {data && data.map(i => <Option key={i} value={i}>{i}</Option>)}
+      </Select>
+    </div>
+  );
+};
+```
+
+- 缓存 & SWR & 预加载(cacheKey)
+
+在 SWR 场景下，我们会对接口数据进行缓存，当下次请求该接口时，我们会先返回缓存的数据，同时，在背后发起新的网络请求，待新数据拿到后，重新触发渲染
+
+```jsx
+const { data, loading } = useRequest(getArticle, {
+  cacheKey: "articleKey",
+});
+```
+
+> 🚨 注意：同一个 cacheKey 的数据是全局共享的
+
+- 屏幕聚焦重新发起请求 refreshOnWindowFocus
+
+- 分页 paginated
+
+`useRequest` 通过配置 `paginated = true` ，即可进入分页模式，自动帮你处理表格常见逻辑，同时我们对 `antd Table` 做了特殊支持
+
+```jsx
+import {useRequest} from '@umijs/hooks';
+​
+export default () => {
+  const [gender, setGender] = useState('male');
+  const { tableProps } = useRequest((params)=>{
+    return getTableData({...params, gender})
+  },
+  {
+    paginated: true,
+    refreshDeps: [gender]
+  });
+​
+  const columns = [];
+​
+  return (
+    <Table columns={columns} rowKey="email" {...tableProps}/>
+  );
+};
+
+```
+
+- 加载更多 loadMore
+
+```jsx
+const { data, loading, loadMore, loadingMore } = useRequest(
+  (d) => getLoadMoreList(d?.nextId, 3),
+  {
+    loadMore: true,
+    cacheKey: "loadMoreDemoCacheId",
+    fetchKey: (d) => `${d?.nextId}-`,
+  }
+);
+```
+
+- loadingDelay
+
+通过设置 `loadingDelay` ，延迟 `loading` 变为 `true` 的时间，当请求很快响应时，可以有效避免 `loading` 变化导致的抖动。
