@@ -680,6 +680,66 @@ export defautl withRouter((history,location,match)=>{
 ```
 
 **v4**
+- useMatch
+
+```JS
+
+const match = useMatch('/comp/:id')
+// match 
+{
+  "params": {
+    "id": "paramId"
+  },
+  "pathname": "/comp/paramId/",
+  "pathnameBase": "/comp/paramId",
+  "pattern": {
+    "path": "/comp/:id",
+    "caseSensitive": false,
+    "end": true
+  }
+}
+```
+
+- useLocation
+
+```jsx
+{
+  "pathname": "/path/",
+  "search": "",
+  "hash": "",
+  "state": null,
+  "key": "default"
+}
+```
+
+> 🚨推荐使用 `useLocation`, 而不是直接访问 `history.location.` 两者的区别是 `pathname` 的部分。 `history.location.pathname` 是完整的浏览器的路径名；而 `useLocation` 中返回的 `pathname` 是相对项目配置的base的路径
+> 🚨举例：项目如果配置 `base: '/testbase'`, 当前浏览器地址为 `https://localhost:8000/testbase/page/apple`
+`history.location.pathname` 为 `/testbase/page/apple`
+ `useLocation().pathname`为 `/page/apple` 
+
+- useParams
+
+```js
+// 路由配置 /comp/:id
+// 当前 location /comp/paramId
+ 
+const params  = useParams();
+// params
+{
+  "id": "paramId"
+}
+```
+
+- useSearchParamms
+
+```js
+// 当前 location /comp?a=b;
+const [searchParams, setSearchParams] = useSearchParams();
+searchParams.get('a')  // b
+searchParams.toString()  // a=b
+ 
+setSearchParams({a:'c',d:'e'}) // location 变成 /comp?a=c&d=e
+```
 
 ### mock
 
