@@ -264,9 +264,9 @@ export default function indexPage() {
 ```css
 .test1 {
   backgroud:url('../assets//images//bg.jpg') // 写死的图片会被转化为base64
-  background: ulr('~@/assets//images//bg.jpg') // src/assets/images
-  background: ulr('cdn链接')
-  background: ulr('/img/bg.jpg') // 引入public中图片
+  background: url('~@/assets//images//bg.jpg') // src/assets/images
+  background: url('cdn链接')
+  background: url('/img/bg.jpg') // 引入public中图片
 }
 
 ```
@@ -355,3 +355,343 @@ export default function indexPage() {
 ```
 
 ### hooks+函数式编写组件
+
+#### useMemo(()=>{},[])
+
+类似computed属性
+
+```jsx
+// 关联更新数据的方法触发
+// 触发条件：父组件更新时，不依赖数据的触发也会更新
+// 父组件通过触发方法更新数据，只有依赖的数据的触发时进行更新=》useMemo()
+
+// 默认情况下onClick方法会触发getNum方法，onChange也会触发getNum方法
+// 阻止不依赖数据的更新：给getNum方法添加useMemo()，只有count更新时，关联的getNum方法才会更新，value更新时不触发getNum方法
+
+export default testPage(){
+  const [count, setCount] = useState(0)
+  const [value, setValue] = useState('0')
+
+  const getNumMemo = useMemo(()=> {
+    console.log('data update);
+    return count*100
+  },[count])
+
+  return (
+    <>
+    <h3>父组件</h3>
+    <div>getNumMemo:{getNumMemo}</div>
+    <button onClick={()=>setCount(count+1)}>+1</button>
+    <input value={value} onChange={(e)=> setValue(e.target.value)}/>
+    </>
+  )
+
+}
+
+```
+
+#### Memo(compoent)
+
+> 高阶组件
+
+```jsx
+// 父子组件
+// 触发条件：父组件更新时，不依赖数据的子组件也会更新
+// 父组件通过触发方法更新数据时，不依赖的数据的子组件不更新=》Memo()
+
+// 默认情况下onClick触发count更新时，onChange方法触发value也会更新子组件
+// 解决useState的触发：将不依赖value数据的子组件用memo包裹，只有count更新，子组件更新
+
+export default testPage(){
+  const [count, setCount] = useState(0)
+  const [value, setValue] = useState('0')
+
+  return (
+    <>
+    <h3>父组件</h3>
+    <div>getNumMemo:{getNumMemo}</div>
+    <button onClick={()=>setCount(count+1)}>+1</button>
+    <input value={value} onChange={(e)=> setValue(e.target.value)}/>
+    <Child count={count}></Child>
+    </>
+  )
+
+}
+
+```
+> 给不依赖触发数据的组件添加高阶组件Memo
+
+```jsx
+// 子组件
+import {Memo} from 'react'
+const Child = ({count}){
+  const show = ()=>console.log('rendered child component')
+
+  return (
+    <>
+      <h3>child component</h3>
+      <div>{show()}</div>
+      <div>{count}</div>
+    </>
+
+  )
+}
+export default Memo(Child)
+```
+
+#### useCallback(()=>{},[])
+
+```jsx
+// 父子组件
+
+// 默认情况下子组件onClick触发不依赖父组件数据时，父组件关联方法更新，父组件触发任意方法，子组件每次都更新
+// 解决useState的触发：将不依赖value, count数据的子组件不更新，给触发方法添加useCallback
+// 如果子数据依赖count变化时，给useCallback添加依赖项
+
+export default testPage(){
+  const [count, setCount] = useState(0)
+  const [value, setValue] = useState('0')
+
+  const updateCount = useCallback(()=>{
+    console.log('parent componet update')
+  })
+
+  return (
+    <>
+    <h3>父组件</h3>
+    <div>getNumMemo:{getNumMemo}</div>
+    <button onClick={()=>setCount(count+1)}>+1</button>
+    <input value={value} onChange={(e)=> setValue(e.target.value)}/>
+    <Child updateCount={updateCount}></Child>
+    </>
+  )
+
+}
+
+```
+
+```jsx
+// 子组件
+import {Memo} from 'react'
+const Child = ({updateCount}){
+  const show = ()=>console.log('rendered child component')
+
+  return (
+    <>
+      <h3>child component</h3>
+      <div>{show()}</div>
+      <button onClick={updateCount}></button>
+    </>
+
+  )
+}
+export default Memo(Child)
+```
+
+### 路由、权限、动态、约定式（理想状态）
+
+#### 组件结构
+
+```text
+├── config
+  ├──config.js
+  ├── routes.ts
+
+├── pages
+  ├──login
+    ├──index.jsx
+    ├──index.less
+
+```
+
+#### layout布局
+
+```text
+                layouts
+                  ├
+    ──────────────────────────────
+    ├                             ├
+components                      children
+    ├                             ├               
+  nav           ──────────────────────────────
+                ├                             ├
+        layouts/layouts2                ────────────────
+                ├                       ├       ├       ├
+        ───────────────────             pages   pages   pages
+        ├                  ├             ├       ├        ├
+  components           children          1       2       ...
+        ├                  ├
+        menu             pages
+                          ├
+              ──────────────────────────
+              ├       ├       ├         ├
+              page1  page2   page3    page4
+
+
+```
+
+**路由布局示例**
+
+```js
+export default [
+  {
+    path: '/'
+    component: '@/layouts/base-layout',
+    routes: [
+      {path: '/login',component: '@/pages/login'},
+      {path: '/reg', component: '@/pages/reg'},
+      {path: '/', redirect: '/login'},
+      {path: '*', layout: false, component: '@/pages/404'},
+      {
+        path: '/goods',
+        wrapper: ['@/pages/auth'],
+        component: '@/layouts/aside-layout',
+        routes: [
+          {path: '/goods', component: '@/pages/goods'},
+          {path: '/goods/:id', component: '@/pages/goods/goods-detail'},
+          {path: '/goods/:id/comment', component: '@/pages/goods/comment'},
+          {path: '/goods/:id/comment/:cid', component: '@/pages/goods/comment-detail'}
+        ]
+      }
+    ]
+  },
+  {path: '*', layout: false, component: '@/pages/404'}
+]
+
+```
+注：配置路由组件的包装组件，通过包装组件可以为当前的路由组件组合进更多的功能。 比如，可以用于路由级别的权限校验
+
+**页面布局示例**
+
+- base-layout
+
+```jsx
+export default function BaseLayout (props){
+  return (
+    <>
+      <Nav></Nav>
+      <div>{props.children}</div>
+    </>
+  )
+}
+```
+
+- asid-layout
+
+```jsx
+export default function AsideLayout (props){
+  return (
+    <>
+      <Menu></Menu>
+      <div>{props.children}</div>
+    </>
+  )
+}
+```
+
+```jsx
+import {Redirect} from 'umi'
+// wrapper/auth.jsx
+export default (props)=>{
+  if(Math.random < .5) {
+    return <div>{props.children}</div>
+  } else {
+    return <Redirect to={} />
+  }
+}
+
+```
+
+#### 页面跳转、参数接收
+
+#### 声明式
+
+**navLink/Link -v3**
+
+```html
+<NavLink
+ activeStyle={{color: red}}
+ to={{pathname: '/goods/3', search: '?a=2'}}></NavLink>
+
+ <NavLink
+ activeStyle={{color: red}}
+ to={{pathname: '/goods/4', query: {a: 2}}}></NavLink>
+
+```
+
+**NavLink/Link -v4**
+
+```html
+<ul>
+    <li><NavLink to="message" style={({ isActive }) => isActive ? { color: 'red' } : undefined}>Messages</NavLink></li>
+    <li><NavLink to="tasks" className={({ isActive }) => isActive ? 'active' : undefined}>Tasks</NavLink></li>
+    <li><NavLink to="blog">{({ isActive }) => <span className={isActive ? 'active' : undefined}>Blog</span>}</NavLink></li>
+</ul>
+
+```
+
+#### 编程式
+
+**v3**
+
+- useLocation
+
+hooks，获取 location 对象: `location.pathname`
+
+- useParams
+
+hooks，获取 params 对象。 params 对象为动态路由（例如：/users/:id）里的参数键值对
+
+- useRouteMatch
+
+获取当前路由的匹配信息:`useRouteMatch().params`
+
+- useHistory
+
+```jsx
+
+export default function test(){
+  const history = useHistory()
+  const goLink = () => {
+    history.push({
+      pathname: '/goods/3',
+      query: {b: 1}
+    })
+  }
+
+  return (
+    <>
+    <button onClick={goLink}>编程式跳转</button>
+    </>
+  )
+
+}
+
+```
+- withRouter
+
+高阶组件，可以通过 withRouter 获取到 history、location、match 对象
+
+```jsx
+export defautl withRouter((history,location,match)=>{
+  return (<></>)
+})
+
+```
+
+**v4**
+
+### mock
+
+
+
+
+
+
+
+
+
+
+
+
+
