@@ -1204,3 +1204,152 @@ export default testPage(props){
   </>)
 }
 ```
+
+### 路由权限
+
+#### 动态添加路由
+
+模拟一个有权限登录的 mock 接口
+
+```js
+// mock-login.js
+export default {
+  "GET /api/auth": (req, res) => {
+    res.send({
+      isLogin: true,
+    });
+  },
+};
+```
+
+mock 一个动态获取的路由接口
+
+```js
+export default {
+  "GET /api/menus": (req, res) => {
+    res.send([
+      {
+        path: "/",
+        component: "layouts/aside-layouts",
+        routes: [
+          {
+            path: "/goods",
+            title: '商品'
+            component: "layouts/aside-layouts",
+            routes: [
+              { path: "/goods/:id?", component: "pages/goods/godds-detail" },
+              { path: "/goods/:id/comment", component: "pages/goods/comment" },
+              {
+                path: "/goods/:id/comment/:cid",
+                component: "pages/goods/comment/comment-detail",
+              },
+              { component: "pages/404" },
+            ],
+          },
+        ],
+      },
+    ]);
+  },
+};
+```
+
+封装一个 render 函数
+
+```js
+// src-app.js
+import { request, history } from "umi";
+// 存放动态路由
+let routesData = [];
+// 处理动态路由，给每条路由添加exact:true, component:require()引入
+// 注意点：1)动态路由读取后，跳转后不显示，需要关闭mfsu:{}
+// 2) 子路由不跳转，除了layout组件，其他需要添加exact
+// 3)数据里面不可以有require，数据需要过滤成require(非空字符拼接+变量)
+// 4）document.ejs报错，需要require拼接时找到index.jsx，目前umi3有这个问题
+const filterRoutes = (routesData) => {
+  routesData.map((item) => {
+    if (item.routes && item.routes.length > 0) {
+      filterRoutes(item.routes);
+    } else {
+      item.exact = true;
+    }
+    if (!item.redirect) {
+      if (item.component.includes("404")) {
+        item.component = require("@/" + item.component + ".jsx").default;
+      } else {
+        item.component = require("@/" + item.component + "/index.jsx").defalut;
+      }
+      if (item.wrappers && item.wrappers.length > 0) {
+        item.wrappers.map((str, index) => {
+          item.wrappers[index] = require("@/" + str + ".jsx").default;
+        });
+      }
+    }
+  });
+};
+export function patchRoutes({ routes }) {
+  // routes是原本的白名单路由
+  filterRoutes(routesDta);
+  routesData.map((item) => routes.push(item));
+}
+
+export const render = async (oldRender) => {
+  const { isLogin } = await request("/api/auth");
+  if (!isLogin) {
+    history.push("/login");
+  } else {
+    routesData = await request("/api/menus");
+  }
+  oldRender();
+};
+
+// 监听路由变化添加埋点
+export function onRouteChange({ matchedRoute, location, routes, action }) {
+  console.log("routes", routes); //
+  console.log("matchedRoutes", matchedRoutes); // 当前匹配的路由及子路由
+  console.log("location", location); // location及其参数
+  console.log("action", action); // 当前跳转执行的操作
+  // 系统的title名字
+  document.title =
+    matchedRoutes[matchedRoutes.length - 1].route.title || "hello world";
+}
+```
+
+#### 拦截器
+
+```js
+export const request = {
+  // timeout: 1000, // 延时
+  // errorConfig: {}, // 错误处理
+  // middlewares: [], // 使用中间件
+  requestInterceptors: [
+    (url, options) => {
+      options.headers = {token: ''aeaf23442rqfaafa3455};
+      return {url, options}
+    }
+  ],
+  responseInterceptors: [
+    (res, options) => {
+      return res
+    }
+  ]
+}
+
+```
+
+组件中调用
+
+```jsx
+import { useRequest } from "umi";
+export default function testPage(props) {
+  const { data, error, laoding } = useRequest({
+    url: "http://localhost:3000/api/goods",
+  });
+  if (error) {
+    return <div>faild to load</div>;
+  }
+  if (loading) {
+    return <div>...loading</div>;
+  }
+  return <div>{JSON.stringify(data)}</div>;
+}
+```
