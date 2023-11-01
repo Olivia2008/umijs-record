@@ -31,6 +31,17 @@ yarn create @umijs/umi-app
 
 ```js
 export default defineConfig({
+  /*
+   *内置插件配置
+   */
+  plugins: [
+    "@umijs/plugins/dist/dva",
+    "@umijs/plugins/dist/request",
+    "@umijs/plugins/dist/model",
+  ],
+  /*
+   *
+   */
   /**
    * @name 开启 hash 模式
    * @description 让 build 之后的产物包含 hash 后缀。通常用于增量发布和避免浏览器加载缓存。
@@ -864,12 +875,15 @@ export default delay(
 
 #### useRequest()
 
+> 需要安装`@umijs/hooks`
+
 第一种：`const {data, error, loading, run, cancel, fetches, loadingMore, loadMore} = useRequest('/api/user')`
 第二种：`const {data, error, loading, run} = useRequest('/proxy/aaaaaaa')` 反向代理
 第三咱：`const { data, error, loading, run } = useRequest((userId)=> `/api/userInfo/${userId}`);`
 第四种：
 
 ```js
+import { useRequest } from "@umijs/hooks";
 const { data, error, loading, run } = useRequest(
   {
     url: "/api/login",
@@ -1353,3 +1367,12 @@ export default function testPage(props) {
   return <div>{JSON.stringify(data)}</div>;
 }
 ```
+
+### umi 内置插件的配置
+
+### IOS 图片不显示
+
+**有两种解决办法**
+
+> 1、去掉`postcss.config.js--->"postcss-viewport-units": {},`
+> 2、给 img 外层包一个父标签 div/figure,设置父标签的 width:200px, height:200px,让 img 直接继承父级 width:100%,height:100%
