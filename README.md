@@ -1,4 +1,4 @@
-## umijs3.0
+## umijs4.0
 
 ### 安装
 
@@ -30,6 +30,7 @@ yarn create @umijs/umi-app
 .umirc.ts
 
 ```js
+const { PUBLIC_PATH = "/" } = process.env;
 export default defineConfig({
   /**
    * @name 开启 hash 模式
@@ -142,7 +143,10 @@ export default defineConfig({
     preset: "antd",
     plugins: ["duration"],
   },
-  publicPath: process.env.NODE_ENV === "production" ? "./" : "/",
+  // 生产环境base与publicPath路径必须统一，如：'/'
+  // const { PUBLIC_PATH = '/' } = process.env;
+  publicPath: PUBLIC_PATH,
+  base: PUBLIC_PATH,
   /**
    * @name 国际化插件
    * @doc https://umijs.org/docs/max/i18n
@@ -354,6 +358,8 @@ export default function indexPage() {
 </div>
 ```
 
+## react-v18
+
 ### hooks+函数式编写组件
 
 #### useMemo(()=>{},[])
@@ -488,6 +494,14 @@ const Child = ({updateCount}){
 }
 export default Memo(Child)
 ```
+
+### cache(fn)
+
+#### 缓存代价昂贵的计算
+
+#### 共享数据快照
+
+#### 预加载数据
 
 ### 路由、权限、动态、约定式（理想状态）
 
@@ -1206,6 +1220,234 @@ export default testPage(props){
 ```
 
 ### 路由权限
+
+#### wrappers 实现路由权限
+
+> 结合第三方认证登录示例
+
+**给所有路由添加需要权限访问的 wrappers**
+
+```js
+// 用户相关的页面路由配置
+  user: [
+    {
+      path: '/accountManagement',
+      component: '@/pages/modules/user/accountManagement/index.tsx',
+      name: '账户管理',
+      layout: false,
+      auth: true,
+      wrappers: ['@/pages/wrappers/index'],
+    },
+    {
+      path: '/authentication',
+      component: '@/pages/modules/user/authentication/index.tsx',
+      name: '认证',
+      layout: false,
+      auth: true,
+      wrappers: ['@/pages/wrappers/index'],
+    },
+  ],
+```
+
+**wrappers 页面设置**
+
+```js
+// src/pages/wrappers/index.tsx
+import SpinLoading from "@/components/SpinLoading";
+import { getLoginInfo, getLoginToken } from "@/service/api/login";
+import {
+  generatePKCE,
+  generateRandomStr,
+  getBaseUrl,
+  getPushUrl,
+  removeLocal,
+} from "@/utils/auth";
+import { localCache } from "@/utils/cache";
+import { getToken, setToken } from "@/utils/cookie";
+import { Toast } from "antd-mobile";
+import { useEffect, useRef, useState } from "react";
+import { Outlet, history, useLocation, useSearchParams } from "umi";
+
+const AuthPage = (props: any) => {
+  const pcke = useRef(generatePKCE());
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const code = searchParams.get("code");
+  const state = searchParams.get("state");
+  const [isAuth, setAuth] = useState(false);
+  // 用户信息
+  const handleLogin = async () => {
+    let authState = generateRandomStr(32);
+    localCache.setCache("init_state", authState);
+    localCache.setCache("init_codeChallenge", pcke.current.codeVerifier);
+    let codeChallenge = pcke.current.codeChallenge;
+    if (authState && codeChallenge) {
+      try {
+        const res = await getLoginInfo({ projectCode: "CCFWZX" });
+        if (res.code === 200) {
+          const { loginUrl, clientId, scope, codeChallengeMethod } = res.data;
+          let pushUrl = getPushUrl({
+            loginUrl,
+            clientId,
+            currentPath: location.pathname, // DEBUGGER
+            scope,
+            challenge: codeChallenge,
+            method: codeChallengeMethod,
+            state: authState,
+          });
+          history.push(pushUrl);
+        } else {
+          Toast.show(res.message);
+        }
+      } catch (error) {}
+    } else {
+      Toast.show("无效的state&codeChallenge");
+    }
+  };
+
+  // 获取传承中心签名
+  const getLoginTokenData = async (params: {
+    code: string,
+    codeVerifier: string,
+    state: string,
+    redirectUri: string,
+    projectCode: string,
+  }) => {
+    try {
+      const res = await getLoginToken(params);
+      if (res.code === 200) {
+        setToken("Authorization", `Bearer ${res.data.token}`);
+        if (res.data.token) {
+          localCache.setCache("login", true);
+          setAuth(true);
+        } else {
+          localCache.setCache("login", false);
+          setAuth(false);
+        }
+      } else {
+        setAuth(false);
+        Toast.show(res.message);
+      }
+    } catch (error) {
+      // Toast.show(error ?? 'fail');
+    }
+  };
+
+  useEffect(() => {
+    if (code && state && localCache.getCache("init_codeChallenge")) {
+      if (state !== localCache.getCache("init_state")) {
+        Toast.show("无效的认证,请重新登录！");
+        setAuth(false);
+        handleLogin();
+      }
+      getLoginTokenData({
+        code: code,
+        state: state,
+        codeVerifier: localCache.getCache("init_codeChallenge"),
+        redirectUri: getBaseUrl(location.pathname),
+        projectCode: "CCFWZX",
+      });
+    } else {
+      if (!getToken("Authorization")) {
+        removeLocal();
+        handleLogin();
+      } else {
+        setAuth(true);
+      }
+    }
+  }, []);
+
+  return isAuth ? (
+    <Outlet />
+  ) : (
+    <div
+      className="authLoaidng"
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+      }}
+    >
+      <SpinLoading />
+    </div>
+  );
+};
+
+export default AuthPage;
+```
+
+**第三方认证登录**
+
+```js
+import Base64 from "crypto-js/enc-base64";
+import sha256 from "crypto-js/sha256";
+import { localCache } from "./cache";
+import { removeToken } from "./cookie";
+const crypto = require("crypto-js");
+const base64URL = (url: string) => {
+  return url
+    .toString(Base64)
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+};
+const generateCodeChallenge = (code_verifier: string) => {
+  return base64URL(sha256(code_verifier));
+};
+const generateRandomStr = (len: number) => {
+  const rand = new Uint8Array(len);
+  window.crypto.getRandomValues(rand);
+  return base64URL(new crypto.lib.WordArray.init(rand));
+};
+const generatePKCE = () => {
+  const codeVerifier = generateRandomStr(32);
+  const pkceObj = {
+    codeVerifier: codeVerifier,
+    codeChallenge: generateCodeChallenge(codeVerifier),
+    state: codeVerifier,
+  };
+  return pkceObj;
+};
+const localUrl = "http://192.168.2.74:9000";
+const testUrl = "";
+const prodUrl = "https://itcm.com.cn";
+const getBaseUrl = (path: string) => {
+  const baseUrl =
+    process.env.NODE_ENV === "development" ? localUrl + path : prodUrl + path;
+  return baseUrl;
+};
+
+const getPushUrl = (params: {
+  loginUrl: string,
+  clientId: string,
+  currentPath: string,
+  scope: string,
+  challenge: string,
+  method: string,
+  state: string,
+}) => {
+  let baseUrl = getBaseUrl(params.currentPath);
+  let url = `${params.loginUrl}?response_type=code&client_id=${
+    params.clientId
+  }&redirect_uri=${encodeURIComponent(baseUrl)}&scope=${
+    params.scope
+  }&code_challenge=${params.challenge}&code_challenge_method=${
+    params.method
+  }&state=${params.state}&nonce=${params.state}`;
+  return url;
+};
+
+const removeLocal = () => {
+  localCache.removeCache("login");
+  localStorage.removeItem("exam");
+  localCache.removeCache("init_state");
+  localCache.removeCache("init_codeChallenge");
+  removeToken("Authorization");
+};
+
+export { generatePKCE, generateRandomStr, getBaseUrl, getPushUrl, removeLocal };
+```
 
 #### 动态添加路由
 
