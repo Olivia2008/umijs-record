@@ -1812,6 +1812,8 @@ characteristic.addEventListener("characteristicvaluechanged", (e) => {
 characteristic.startNotifications();
 ```
 
+### 脉之语通过蓝牙连接 PC 流程
+
 #### 1、打开手机蓝牙
 
 #### 2、打开脉复仪
