@@ -369,6 +369,34 @@ export default function indexPage() {
 </div>
 ```
 
+#### 修改原生 checkbox 样式
+
+> 用 lable 标签的 for 属性，绑定到 input 标签上（for 属性对应到 input 标签中的 id）
+
+```html
+<div class="formItem">
+  <input type="checkbox" name="Contract" id="Contract" />
+  <label for="Contract">
+    <img id="check" src="~/images/radio_icon.png" alt="" width="17" />
+    <img id="checked" src="~/images/radio_checked_icon.png" alt="" width="17" />
+  </label>
+</div>
+```
+
+```css
+input[type="checkbox"] {
+  visibility: hidden;
+}
+#checked {
+  display: none;
+}
+```
+
+```js
+// 点击#check 显示#checked,隐藏#check
+// 点击#checked， 显示#check，隐藏#checked
+```
+
 ## react-v18
 
 ### hooks+函数式编写组件
@@ -1618,3 +1646,434 @@ export default function testPage(props) {
 
 > 1、去掉`postcss.config.js--->"postcss-viewport-units": {},`
 > 2、给 img 外层包一个父标签 div/figure,设置父标签的 width:200px, height:200px,让 img 直接继承父级 width:100%,height:100%
+
+## 蓝牙连接脉复仪
+
+### Web Bluetooth API
+
+**BluetoothDevice**
+
+> properties
+
+```JS
+device.id: string;
+device.name:string;
+device.gatt:BluetoothRemoteGATTServer
+```
+
+**BluetoothRemoteGATTServer**
+
+> properties
+
+```js
+// 是否连接上设备
+connected: boolean;
+// 设备
+bluetoothDevice;
+```
+
+> methods
+
+```js
+// 连接
+connect():BluetoothRemoteGATTServer(Promise)
+// 断开
+disconnect(): ()=>void
+// 获取蓝牙设备的主要信息
+getPrimaryService(bluetoothServiceUUID):BluetoothRemoteGATTServer(Promise)
+// 获取多个设置信息
+getPrimaryServices(bluetoothServiceUUID):BluetoothRemoteGATTServer(Promise)[]
+```
+
+**BluetoothUUID**
+
+> UUID：128 位，16 位，32 位
+> methods
+
+```js
+getCharacteristic(name):返回128位uuid
+
+```
+
+**BluetoothRemoteGATTService**
+
+> properties
+
+```JS
+device
+isPriamry:boolean
+uuid
+```
+
+> methods
+
+```js
+// 获取GATT信息
+getCharacteristic(characteristic):BluetoothRemoteGATTCharacteristic(Promise)
+
+
+```
+
+> eventTarget
+
+```js
+addEventListener();
+removeEventListener();
+dispatchEvent();
+```
+
+**BluetoothRemoteGATTCharacteristic**
+
+> properties
+
+```js
+service;
+uuid;
+value;
+```
+
+> methods
+
+```js
+getDescriptor(bluetoothDescriptorUUID);
+getDescriptor(bluetoothDescriptorUUID);
+readValue();
+writeValue(value);
+startNotifications():Promise
+```
+
+### 流程
+
+**简介图**
+<img src="../images/webbluetooth-central-peripherals.jpg" style="zoom:60%;float: left"></img>
+
+<img src="../images/webbluetooth-array-of-objects.jpg" style="zoom:60%;float: left"></img>
+
+**客户端与设备连接的主要 API**
+
+> 1、打开双端蓝牙，进行匹配
+
+```js
+let device = await navigator.bluetooth.requestDevice({
+  filters: [{ namePrefix: "脉之语" }],
+  optionalServices: ["49535343-fe7d-4ae5-8fa9-9fafd205e455", 0xff00, 0xffe0],
+});
+```
+
+> 2、连接 GATT 服务端 connect()
+
+```js
+let server = await device.gatt.connect();
+```
+
+> 3、通过 UUID 获取服务
+
+```js
+let service = await server.getPrimaryService(
+  "49535343-fe7d-4ae5-8fa9-9fafd205e455"
+);
+```
+
+> 4、通过 UUID 获取设备的功能
+
+```js
+let characteristic = await service.getCharacteristic(
+  "49535343-8841-43f4-a8d4-ecbe34729bb3"
+);
+```
+
+> 5、写入数据(主要)，传输数据
+
+```js
+// 设备提供的数据是ArrayBuffer->Unit8Array->Array
+characteristic.writeValue(new Uint8Array([0, r, g, b]));
+```
+
+> 6、读取数据（根据需要）
+
+```js
+let value = await characteristic.readValue();
+
+let r = value.getUint8(1);
+let g = value.getUint8(2);
+let b = value.getUint8(3);
+```
+
+> 7、监听设备值的变化-传输数据
+
+```js
+characteristic.addEventListener("characteristicvaluechanged", (e) => {
+  let r = e.target.value.getUint8(1);
+  let g = e.target.value.getUint8(2);
+  let b = e.target.value.getUint8(3);
+});
+
+characteristic.startNotifications();
+```
+
+#### 1、打开手机蓝牙
+
+#### 2、打开脉复仪
+
+**连接选择脉复仪型号进行匹配**
+
+```js
+// PC端不支持手机android,ios
+
+// return Promise BluetoothDevice
+let device = navigator.bluetooth.requestDevice({
+  filters:{
+    namePrefix:string,
+    BluetoothServiceUUIDs:string,
+    name:string
+  }[],
+  optionalServices:BluetoothServiceUUID[], // 128-bit UUID
+  acceptAllDevices:boolean
+})
+
+```
+
+> 3、连接脉复仪
+
+连接，准备写和读
+
+```JS
+let server = await device.gatt.connect();
+// 获取服务（尝试多种设备）
+
+/*尝试连接HC-02*/
+// 获取服务
+let service = await server.getPrimaryService('49535343-fe7d-4ae5-8fa9-9fafd205e455')
+// 传入UUID获取characteristic,可以写入或读取数据
+let characteristicWriter = await service.getCharacteristic('49535343-8841-43f4-a8d4-ecbe34729bb3')
+let characteristicReader = await service.getCharacteristic('49535343-1e4d-4bd9-ba61-23c647249616')
+
+/*尝试连接HC-04BLE*/
+// 获取服务
+let service = await server.getPrimaryService(0xFF00)
+// 传入UUID获取characteristic,可以写入或读取数据
+let characteristicWriter = await service.getCharacteristic(0xFF02)
+let characteristicReader = await service.getCharacteristic(0xFF01)
+/*尝试连接HC-04BLE新版*/
+// 获取服务
+let service = await server..getPrimaryService(0xFFE0)
+// 传入UUID获取characteristic,可以写入或读取数据
+let characteristicWriter = await service.getCharacteristic(0xFFE1)
+let characteristicReader = await service.getCharacteristic(0xFFE1)
+```
+
+监听 characterisc 值的变化写入数据
+
+示例
+
+```js
+// example
+characteristic.addEventListener("characteristicvaluechanged", (e) => {
+  let r = e.target.value.getUint8(1);
+  let g = e.target.value.getUint8(2);
+  let b = e.target.value.getUint8(3);
+});
+characteristic.startNotifications();
+```
+
+公司实际场景处理
+
+```js
+// 通知
+characteristicReader.addEventListener("characteristicvaluechanged", (e) => {
+  // 获取最新数据(DataView转Array)
+  let data = Array.prototype.slice.call(
+    new Uint8Array(event.target.value.buffer)
+  );
+  // 循环处理数据(最多处理10次以免产生死循环)
+  for (let i = 0; data.length >= 20 && i < 10; i++) {
+    // 截取20字节进行处理
+    let value = data.splice(0, 20);
+    processNotification(value);
+  }
+});
+
+// 获取 寸关尺数据
+let processNotification = (value) =>{
+      // 获取数据
+      var data = []
+      for (let x of value) {
+        data.push(x.toString(16))
+      }
+      // console.log("接收数据", data)
+      // 计算数据
+      var dir = value[0]
+      if (dir != 0xD0) {
+        return
+      }
+      var cunh = value[4]
+      var cunl = value[5]
+      var ganh = value[6]
+      var ganl = value[7]
+      var chih = value[8]
+      var chil = value[9]
+      var cun = (cunh << 8) + cunl + 60
+      var gan = (ganh << 8) + ganl + 30
+      var chi = (chih << 8) + chil
+      // console.log(cun, gan, chi)
+      // 更新绘图
+      this.options.series[0].data.shift()
+      this.options.series[0].data.push(cun)
+      this.options.series[1].data.shift()
+      this.options.series[1].data.push(gan)
+      this.options.series[2].data.shift()
+      this.options.series[2].data.push(chi)
+      this.cnt++
+    },
+```
+
+> 4、传输数据
+
+```js
+/**
+ * *@pulses 脉采左右手总数据,接口/api/consilia/getPulseList
+ * @gain 系数
+ * 1）先分左右手的采脉数据
+ * 2）如果只有总按数据，复制一份分按数据（type:1-总，2-分）
+ * 3）系数数据不足18，则中断传输
+ * 4）操作命令，传输（下发/写入）数据
+*/
+ async handleStartClick() {
+      // 修改状态
+      this.loading = true
+      this.loadingtext = "加载脉搏数据"
+      // 启动处理
+      try {
+        // 筛选数据(左右)
+        console.log("筛选数据")
+        let pulseside = []
+        for (let it of this.pulses) {
+          if (it.side == this.side) {
+            pulseside.push(it)
+          }
+        }
+        // 补充数据(如果只有总按数据，则复制一份分按数据)
+        console.log("补充数据")
+        // type:1-总，2-分
+        let countZong = 0
+        for (let it of pulseside) {
+          if (it.type == 1) {
+            countZong++
+          }
+        }
+        if (pulseside.length == 9 && countZong == 9) {
+          for (let i = 0; i < 9; i++) {
+            let s = JSON.stringify(pulseside[i])
+            let p = JSON.parse(s)
+            p.type = 2
+            pulseside.push(p)
+          }
+        }
+        // 缩放处理-系数变化处理
+        console.log("缩放处理", this.gain)
+        let pulselist = []
+        for (let it of pulseside) {
+          let d = this.dogain(it.motorData, this.gain)
+          pulselist.push(d)
+        }
+        // 数量判断
+        if (pulselist.length != 18) {
+          console.log('数量错误', pulselist)
+          this.running = false
+          throw new Error("数据量错误")
+        }
+        // 操作命令
+        let MESG_START = [0xC0, 0x01, 0x00, 0x00]
+        let MESG_STOP = [0xC0, 0x02, 0x00, 0x00]
+        let MESG_LOAD = [0xC0, 0x03, 0x03, 0x01]
+        let MESG_OVER = [0xC0, 0x04, 0x00, 0x00]
+        let MESG_RUN = [0xC0, 0x05, 0x00, 0x00]
+        let MESG_PAUSE = [0xC0, 0x06, 0x00, 0x00]
+        let COMMANDS = [0x61, 0x62, 0x63, 0x64, 0x65, 0x66]
+        let PRESSURES = [[], [], [], [1, 3, 5], [], [1, 3, 4, 5, 7], [], [1, 2, 3, 4, 5, 6, 7]]
+        // 发送发数命令
+        console.log('发送发数命令')
+        this.loadingtext = "下发脉搏数据"
+        let mesg = MESG_LOAD.concat([1, 0, 0, 0])
+        this.send(mesg)
+        await this.sleep(500)
+        // 验证发数状态TODO
+        console.log('验证发数状态')
+        // 发送脉搏数据
+        console.log("发送脉搏数据")
+        let k = 0
+        for (let comd of COMMANDS) {
+          for (let code of PRESSURES[3]) {
+            this.loadingtext = "下发脉搏数据 " + (k + 1)
+            let body = pulselist[k++]
+            let head = [0xC0, comd, code, body.length / 4]
+            let mesg = head.concat(body)
+            // await this.send(mesg)
+            // 说明：PC上可以一次性发送，PAD上必须分批发送每次20字节
+            while (mesg.length > 0) {
+              let buf = mesg.splice(0, 20)
+              await this.send(buf)
+            }
+            // 说明：这里必须200ms，太少硬件可能处理不过来
+            await this.sleep(200)
+          }
+        }
+        // 验证数据状态TODO
+        console.log("验证数据状态")
+        // 发送复现命令
+        console.log("发送复现命令")
+        this.send(MESG_RUN)
+        // 启动成功
+        this.running = true
+        this.$message.success("启动成功")
+      } catch (error) {
+        // 启动失败
+        console.log("启动失败", error)
+        this.running = false
+        this.connected = false
+        this.$message.warning("启动失败")
+      }
+      // 修改状态
+      this.loading = false
+    },
+
+```
+
+系数变化处理
+
+```js
+dogain(motorData, gain) {
+  let x = []
+  for (let i = 0; i < motorData.length; i += 2) {
+    let p = motorData[i] * gain
+    let s = motorData[i + 1] * gain
+    let pl = p & 0x00FF
+    let ph = p >> 8
+    let sl = s & 0x00FF
+    let sh = s >> 8
+    x.push(ph, pl, sh, sl)
+  }
+  return x
+}
+```
+
+写入数据
+
+```js
+async send(arr) {
+      // 输出日志
+  let array = []
+  for (let i = 0; i < arr.length; i++) {
+    array.push(arr[i].toString(16))
+  }
+  console.log("发送数据", array)
+  // 发送数据
+  try {
+    // new Uint8Array([ 0, r, g, b  ]));
+    await characteristicWriter.writeValue(new Uint8Array(arr))
+  } catch (err) {
+    console.log("发送失败", err)
+    throw err
+  }
+},
+```
