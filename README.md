@@ -1745,9 +1745,10 @@ startNotifications():Promise
 ### 流程
 
 **简介图**
-<img src="../images/webbluetooth-central-peripherals.jpg" style="zoom:60%;float: left"></img>
 
-<img src="../images/webbluetooth-array-of-objects.jpg" style="zoom:60%;float: left"></img>
+<img src="./images/webbluetooth-central-peripherals.jpg" style="zoom:60%;float: left"></img>
+
+<img src="./images/webbluetooth-array-of-objects.jpg" style="zoom:60%;float: left"></img>
 
 **客户端与设备连接的主要 API**
 
