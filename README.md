@@ -235,6 +235,12 @@ export default defineConfig({
     strategy: "normal",
   },
   requestRecord: {},
+  // 设置本地开发环境配置安全证书
+  // server.crt, server.key放在根目录下
+  https: {
+    cert: "./server.crt",
+    key: "./server.key",
+  },
 });
 ```
 
