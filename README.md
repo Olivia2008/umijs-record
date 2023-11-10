@@ -190,22 +190,17 @@ export default defineConfig({
   /**
    * @name <head> 中额外的 script
    * @description 配置 <head> 中额外的 script
+   * scripts放在public中
    */
   headScripts: [
     // 解决首次加载时白屏的问题
     {
-      src:
-        process.env.NODE_ENV === "production"
-          ? "./scripts/loading.js"
-          : "/scripts/loading.js",
+      src: "/scripts/loading.js",
       async: true,
     },
     // 解决网络不好时富文本加载不出来的问题
     {
-      src:
-        process.env.NODE_ENV === "production"
-          ? "./scripts/tinymce.min.js"
-          : "/scripts/tinymce.min.js",
+      src: "/scripts/tinymce.min.js",
       async: true,
     },
   ],
@@ -240,6 +235,11 @@ export default defineConfig({
   https: {
     cert: "./server.crt",
     key: "./server.key",
+  },
+  dva: {
+    // 兼容ie 11
+    immer: { enableES5: true },
+    extraModels: [],
   },
 });
 ```
