@@ -405,6 +405,13 @@ input[type="checkbox"] {
 
 ## react-v18
 
+### useState 与 useRef，useEffect
+
+在数据请求时，业务应用情景：
+搜索及筛选，包括搜索防抖处理
+
+使用应响式数据 `useState`，在数据变化时，通过 `useEffect` 监听，监听多个值导致请求次数多，重复或被覆盖时，用 `useRef` 来写固定数据，偶有变化时 `useEffect` 监听 `useRef` 数据
+
 ### hooks+函数式编写组件
 
 #### useMemo(()=>{},[])
@@ -538,6 +545,54 @@ const Child = ({updateCount}){
   )
 }
 export default Memo(Child)
+```
+
+#### useCallback+debounce(lodash)
+
+```jsx
+import { debounce } from "lodash";
+
+export default () => {
+  const handleSearchMembers = (val: string) => {
+    if (val === "") return;
+    let obj = {
+      keyword: val ?? "",
+      userType: 4,
+      userIds: [],
+    };
+    searchAllMembers("project-member/search", obj).then((res) => {
+      if (res.code === 200) {
+        let list =
+          res.data && res.data.length > 0
+            ? res.data.map((item: APITYPE.AllMemDataItem) => ({
+                label: item.name,
+                value: item.id,
+              }))
+            : [];
+        setAllMemberlist([...list]);
+      }
+    });
+  };
+  const handleSearch = useCallback(
+    debounce((e) => handleSearchMembers(e), 500),
+    []
+  );
+  return (
+    <ProFormSelect
+      name="member"
+      label="设置成员"
+      fieldProps={{
+        mode: "multiple",
+        searchOnFocus: true,
+        onSearch: handleSearch,
+      }}
+      initialValue={currentMemVal}
+      showSearch
+      placeholder="请选择"
+      options={allMemberlist}
+    />
+  );
+};
 ```
 
 ### cache(fn)
@@ -1646,12 +1701,22 @@ export default function testPage(props) {
 
 ### umi 内置插件的配置
 
-### IOS 图片不显示
+### IOS 常见问题总结
+
+常见问题[(https://blog.csdn.net/m0_63160365/article/details/121771248)]
+
+#### 1、图片不显示
 
 **有两种解决办法**
 
 > 1、去掉`postcss.config.js--->"postcss-viewport-units": {},`
 > 2、给 img 外层包一个父标签 div/figure,设置父标签的 width:200px, height:200px,让 img 直接继承父级 width:100%,height:100%
+
+#### 2、一行文本不换行问题
+
+```css
+word-break: keep-all;
+```
 
 ## 蓝牙连接脉复仪
 
