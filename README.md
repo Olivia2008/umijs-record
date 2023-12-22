@@ -1,9 +1,37 @@
 ## umijs4.0
 
+### umi 特性
+
+1、企业级，在安全性、稳定性、最佳实践、约束能力方面会考虑更多
+2、插件化，啥都能改，Umi 本身也是由插件构成
+3、MFSU，比 Vite 还快的 Webpack 打包方案
+4、基于 React Router 6 的完备路由
+5、默认最快的请求
+6、SSR & SSG
+7、稳定白盒性能好的 ESLint 和 Jest
+8、React 18 的框架级接入
+9、Monorepo 最佳实践
+
+### 什么时候不用 umi
+
+1、需要支持 IE 8 或更低版本的浏览器
+2、需要支持 React 16.8.0 以下的 React
+3、需要跑在 Node 14 以下的环境中
+4、有很强的 webpack 自定义需求和主观意愿
+5、需要选择不同的路由方案
+
 ### 安装
 
 ```bash
 yarn create @umijs/umi-app
+
+// npm
+npx create-umi@latest
+// yarn
+yarn create umi
+
+// 安装必备@types
+npm install -D @types/node @types/jest typescript
 ```
 
 ### 目录结构
@@ -414,7 +442,13 @@ input[type="checkbox"] {
 
 ### hooks+函数式编写组件
 
+#### useEffect
+
+> 用来在函数组件中添加副作用，例如发起网络请求，更新 dom 等操作
+
 #### useMemo(()=>{},[])
+
+> 用来缓存计算结果，提高组件渲染性能
 
 类似 computed 属性
 
@@ -499,6 +533,8 @@ export default Memo(Child)
 ```
 
 #### useCallback(()=>{},[])
+
+> 用来缓存函数实例，避免不必要的渲染
 
 ```jsx
 // 父子组件
@@ -594,6 +630,22 @@ export default () => {
   );
 };
 ```
+
+#### useState
+
+> 用来在函数组件中添加状态，能够代替类组件中的 state
+
+#### useContext
+
+> 用来在函数组件之间共享全局数据
+
+#### useReducer
+
+> 用来管理复杂状态或多个相关状态的更新
+
+#### useRef
+
+> 用来获取 dom 节点或缓存任何可变值，类似于类组件中的 ref 属性
 
 ### cache(fn)
 
@@ -1718,6 +1770,14 @@ export default function testPage(props) {
 word-break: keep-all;
 ```
 
+## Umi Max
+
+### 数据流
+
+> @umi/max 内置了数据流管理插件，它是一种基于 hooks 范式的轻量级数据管理方案，可以在 Umi 项目中管理全局的共享数据。
+
+参见： https://umijs.org/docs/max/data-flow
+
 ## 蓝牙连接脉复仪
 
 ### Web Bluetooth API
@@ -2151,3 +2211,15 @@ async send(arr) {
   }
 },
 ```
+
+## 报错记录
+
+### dayjs
+
+#### 1、clone.weekday is not a function at Object.getWeekDay
+
+> 解决将 dayjs 升级为`1.11.4`
+
+### antd
+
+#### 1、
