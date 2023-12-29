@@ -1778,6 +1778,62 @@ word-break: keep-all;
 
 参见： https://umijs.org/docs/max/data-flow
 
+## css
+
+### 滚动条样式设置
+
+**::-webkit-scrollbar 系列属性**
+详细使用说明 ::-webkit-scrollbar
+注意：如果没有设置滚动溢出的相关属性，滚动条样式系列属性不会生效（resize 除外）。
+属性
+::-webkit-scrollbar 整个滚动条。
+::-webkit-scrollbar-button 滚动条上的按钮（上下箭头）。
+::-webkit-scrollbar-thumb 滚动条上的滚动滑块。
+::-webkit-scrollbar-track 滚动条轨道。
+::-webkit-scrollbar-track-piece 滚动条没有滑块的轨道部分。
+::-webkit-scrollbar-corner 当同时有垂直滚动条和水平滚动条时交汇的部分。通常是浏览器窗口的右下角。
+::-webkit-resizer 出现在某些元素底角的可拖动调整大小的滑块。
+注意：该系列属性在没有优先设置 ::-webkit-scrollbar 时，其他滚动条相关样式不会生效（resize 除外）。
+常用：::-webkit-scrollbar、::-webkit-scrollbar-thumb、::-webkit-scrollbar-track
+
+```css
+::-webkit-scrollbar {
+  /* 设置滚动条宽度 */
+  width: 20px;
+  /* 设置滚动条背景色 */
+  background: blue;
+}
+::-webkit-scrollbar-button {
+  /* 滚动条上下箭头的颜色 */
+  background: yellow;
+}
+::-webkit-scrollbar-thumb {
+  /* 滚动条滑块圆角 */
+  border-radius: 8px;
+  /* 滚动条滑块高度 */
+  height: 100px;
+  /* 滚动条滑块背景色 */
+  background: skyblue;
+}
+::-webkit-scrollbar-track {
+  /* 滚动条轨道背景色 */
+  background: orange;
+  /* 滚动条轨道圆角 */
+  border-radius: 10px;
+}
+::-webkit-scrollbar-track-piece {
+  /* 滚动条轨道背景色 */
+  /* 覆盖在轨道上方，黑色半透明与橙色叠加 */
+  background: rgba(0, 0, 0, 0.3);
+}
+::-webkit-scrollbar-corner {
+  /* 横向、纵向滚动条的交汇背景色 */
+  background: red;
+}
+```
+
+<img src="./images/scrollbar.png" style="zoom:60%;float: left"></img>
+
 ## 蓝牙连接脉复仪
 
 ### Web Bluetooth API
